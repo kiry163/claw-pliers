@@ -39,6 +39,8 @@
 - [ ] 7.3 重构 MailHandler 使用依赖注入
 - [ ] 7.4 更新 router.go 组装依赖
 
+> Note: Service layer created (6.1-6.3), full DI integration pending
+
 ## 8. 日志完善
 
 - [ ] 8.1 在关键操作添加日志记录
