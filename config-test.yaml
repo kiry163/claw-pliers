@@ -1,0 +1,14 @@
+server:
+  port: 8080
+  log_level: debug
+
+auth:
+  local_key: "test-local-key-change-me"
+
+includes:
+  - name: file
+    path: "./config/file-config.yaml"
+  - name: mail
+    path: "./config/mail-config.yaml"
+  - name: image
+    path: "./config/image-config.yaml"

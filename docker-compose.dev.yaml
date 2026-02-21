@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: claw-pliers-minio
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  claw-pliers:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: claw-pliers
+    ports:
+      - "${CLAWPLIERS_PORT:-8080}:8080"
+    environment:
+      CLAWPLIERS_SERVER_PORT: 8080
+      CLAWPLIERS_AUTH_LOCAL_KEY: ${CLAWPLIERS_AUTH_LOCAL_KEY:-change-me-in-production}
+      CLAWPLIERS_DATABASE_PATH: /app/data/claw-pliers.db
+      CLAWPLIERS_MINIO_ENDPOINT: minio:9000
+      CLAWPLIERS_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      CLAWPLIERS_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      CLAWPLIERS_MINIO_BUCKET: claw-pliers
+      GIN_MODE: release
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data
+    depends_on:
+      minio:
+        condition: service_healthy
+
+volumes:
+  minio-data:
