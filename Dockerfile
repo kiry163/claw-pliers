@@ -18,7 +18,8 @@ RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
 
 COPY --from=builder /app/claw-pliers .
-COPY config.yaml .
+COPY data/config/config.yaml ./config.yaml
+COPY data/config/*.yaml ./config/
 
 RUN mkdir -p /app/data
 

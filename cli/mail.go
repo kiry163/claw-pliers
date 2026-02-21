@@ -103,7 +103,13 @@ var mailListCmd = &cobra.Command{
 			return nil
 		}
 
-		accounts, ok := response["accounts"].([]interface{})
+		data, ok := response["data"].(map[string]interface{})
+		if !ok {
+			fmt.Println("No accounts configured on server")
+			return nil
+		}
+
+		accounts, ok := data["accounts"].([]interface{})
 		if !ok || len(accounts) == 0 {
 			fmt.Println("No accounts configured on server")
 			return nil
@@ -446,14 +452,6 @@ func callMailAPIWithResponse(endpoint string, params map[string]string) (string,
 		serverCfg = Config{Endpoint: "http://localhost:8080", LocalKey: ""}
 	}
 
-	// Override with environment variables if set
-	if envEndpoint := os.Getenv("CLAWPLIERS_ENDPOINT"); envEndpoint != "" {
-		serverCfg.Endpoint = envEndpoint
-	}
-	if envKey := os.Getenv("CLAWPLIERS_AUTH_LOCAL_KEY"); envKey != "" {
-		serverCfg.LocalKey = envKey
-	}
-
 	// Load mail account config (for potential future use)
 	_, _ = loadMailConfig()
 
@@ -507,20 +505,6 @@ func mergeMailConfig(cfg *MailConfig, configPath string) *MailConfig {
 	var raw map[string]interface{}
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return cfg
-	}
-
-	if server, ok := raw["server"].(map[string]interface{}); ok {
-		if port, ok := server["port"].(int); ok {
-			os.Setenv("CLAWPLIERS_ENDPOINT", fmt.Sprintf("http://localhost:%d", port))
-		} else if portFloat, ok := server["port"].(float64); ok {
-			os.Setenv("CLAWPLIERS_ENDPOINT", fmt.Sprintf("http://localhost:%d", int(portFloat)))
-		}
-	}
-
-	if auth, ok := raw["auth"].(map[string]interface{}); ok {
-		if lk, ok := auth["local_key"].(string); ok {
-			os.Setenv("CLAWPLIERS_AUTH_LOCAL_KEY", lk)
-		}
 	}
 
 	return cfg

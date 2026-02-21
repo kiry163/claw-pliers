@@ -20,7 +20,7 @@ services:
       retries: 3
 
   claw-pliers:
-    image: claw-pliers:latest
+    build: .
     container_name: claw-pliers
     ports:
       - "8080:8080"
@@ -33,7 +33,7 @@ services:
       CLAWPLIERS_MINIO_SECRET_KEY: minioadmin
       CLAWPLIERS_MINIO_BUCKET: claw-pliers
     volumes:
-      - ./config:/app/config:ro
+      - ./data/config:/app/config:ro
       - pliers-data:/app/data
     depends_on:
       minio:

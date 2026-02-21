@@ -36,7 +36,7 @@ services:
       CLAWPLIERS_MINIO_BUCKET: claw-pliers
       GIN_MODE: release
     volumes:
-      - ./config:/app/config:ro
+      - ./data/config:/app/config:ro
       - ./data:/app/data
     depends_on:
       minio:

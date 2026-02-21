@@ -73,7 +73,7 @@ type Client struct {
 }
 
 func loadConfig() (Config, error) {
-	projectConfig := "./config/config.yaml"
+	projectConfig := "./data/config/config.yaml"
 	if _, err := os.Stat(projectConfig); err == nil {
 		return loadConfigFromPath(projectConfig)
 	}
@@ -92,7 +92,7 @@ func loadConfig() (Config, error) {
 		return loadConfigFromPath(userConfig)
 	}
 
-	return Config{}, errors.New("config file not found: ./config/config.yaml or ~/.config/claw-pliers/config.yaml")
+	return Config{}, errors.New("config file not found: ./data/config/config.yaml or ~/.config/claw-pliers/config.yaml")
 }
 
 func loadConfigFromPath(path string) (Config, error) {
@@ -121,14 +121,6 @@ func loadConfigFromPath(path string) (Config, error) {
 		if lk, ok := auth["local_key"].(string); ok {
 			localKey = lk
 		}
-	}
-
-	if envEndpoint := os.Getenv("CLAWPLIERS_ENDPOINT"); envEndpoint != "" {
-		endpoint = envEndpoint
-	}
-
-	if envKey := os.Getenv("CLAWPLIERS_AUTH_LOCAL_KEY"); envKey != "" {
-		localKey = envKey
 	}
 
 	if endpoint == "" {
@@ -513,6 +505,23 @@ var filePutCmd = &cobra.Command{
 		} else {
 			// remotePath already contains the target filename
 			fullRemotePath = remotePath
+		}
+
+		// Check for duplicate file in target directory
+		targetFileName := filepath.Base(fullRemotePath)
+		dirPath := filepath.Dir(fullRemotePath)
+		if dirPath == "." {
+			dirPath = "/"
+		}
+		files, _, err := client.ListFiles(dirPath)
+		if err == nil {
+			for _, f := range files {
+				if f.OriginalName == targetFileName {
+					fmt.Printf("\nError: File '%s' already exists in directory '%s'\n", targetFileName, dirPath)
+					fmt.Println("Please use a different filename or delete the existing file first.")
+					return nil
+				}
+			}
 		}
 
 		fmt.Printf("Uploading %s (%s)...\n", localFileName, formatSize(info.Size()))
