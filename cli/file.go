@@ -503,11 +503,16 @@ var filePutCmd = &cobra.Command{
 		client := NewClient(cfg)
 
 		localFileName := filepath.Base(localPath)
-		fullRemotePath := remotePath
+		var fullRemotePath string
+		// If remotePath is "/" or ends with "/", it's a directory - append filename
+		// Otherwise, remotePath is the full target path (with filename)
 		if remotePath == "/" {
 			fullRemotePath = "/" + localFileName
+		} else if strings.HasSuffix(remotePath, "/") {
+			fullRemotePath = remotePath + localFileName
 		} else {
-			fullRemotePath = remotePath + "/" + localFileName
+			// remotePath already contains the target filename
+			fullRemotePath = remotePath
 		}
 
 		fmt.Printf("Uploading %s (%s)...\n", localFileName, formatSize(info.Size()))

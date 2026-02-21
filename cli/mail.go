@@ -439,41 +439,25 @@ func init() {
 }
 
 func callMailAPIWithResponse(endpoint string, params map[string]string) (string, error) {
-	cfg, err := loadMailConfig()
+	// Load server config (endpoint and localKey) from file.go's loadConfig
+	serverCfg, err := loadConfig()
 	if err != nil {
-		return "", fmt.Errorf("failed to load config: %v", err)
+		// If config loading fails, use defaults
+		serverCfg = Config{Endpoint: "http://localhost:8080", LocalKey: ""}
 	}
 
-	projectConfig := "./config/config.yaml"
-	if _, err := os.Stat(projectConfig); err == nil {
-		cfg = mergeMailConfig(cfg, projectConfig)
-	}
-
-	configDir := os.Getenv("CLAWPLIERS_CONFIG_DIR")
-	if configDir == "" {
-		home, err := os.UserHomeDir()
-		if err == nil {
-			configDir = filepath.Join(home, ".config", "claw-pliers")
-		}
-	}
-	if configDir != "" {
-		userConfig := filepath.Join(configDir, "config.yaml")
-		if _, err := os.Stat(userConfig); err == nil {
-			cfg = mergeMailConfig(cfg, userConfig)
-		}
-	}
-
-	serverEndpoint := "http://localhost:8080"
-	localKey := "test-local-key-change-me"
-
+	// Override with environment variables if set
 	if envEndpoint := os.Getenv("CLAWPLIERS_ENDPOINT"); envEndpoint != "" {
-		serverEndpoint = envEndpoint
+		serverCfg.Endpoint = envEndpoint
 	}
 	if envKey := os.Getenv("CLAWPLIERS_AUTH_LOCAL_KEY"); envKey != "" {
-		localKey = envKey
+		serverCfg.LocalKey = envKey
 	}
 
-	apiURL := fmt.Sprintf("%s/api/v1/mail/%s", serverEndpoint, endpoint)
+	// Load mail account config (for potential future use)
+	_, _ = loadMailConfig()
+
+	apiURL := fmt.Sprintf("%s/api/v1/mail/%s", serverCfg.Endpoint, endpoint)
 
 	var req *http.Request
 	if params != nil && len(params) > 0 {
@@ -493,7 +477,7 @@ func callMailAPIWithResponse(endpoint string, params map[string]string) (string,
 		}
 	}
 
-	req.Header.Set("X-Local-Key", localKey)
+	req.Header.Set("X-Local-Key", serverCfg.LocalKey)
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
