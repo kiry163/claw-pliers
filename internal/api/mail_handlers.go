@@ -5,15 +5,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kiry163/claw-pliers/internal/config"
-	"github.com/kiry163/claw-pliers/internal/mail"
+	"github.com/kiry163/claw-pliers/internal/service"
 )
 
 type MailHandler struct {
-	cfg *config.Config
+	cfg     *config.Config
+	Service *service.MailService
 }
 
-func NewMailHandler(cfg *config.Config) *MailHandler {
-	return &MailHandler{cfg: cfg}
+func NewMailHandler(cfg *config.Config, svc *service.MailService) *MailHandler {
+	return &MailHandler{cfg: cfg, Service: svc}
 }
 
 func (h *MailHandler) TestConnection(c *gin.Context) {
@@ -23,7 +24,7 @@ func (h *MailHandler) TestConnection(c *gin.Context) {
 		return
 	}
 
-	latency, err := mail.TestConnection(email)
+	latency, err := h.Service.TestConnection(email)
 	if err != nil {
 		Error(c, http.StatusInternalServerError, 10002, err.Error())
 		return
@@ -50,7 +51,7 @@ func (h *MailHandler) SendMail(c *gin.Context) {
 		return
 	}
 
-	err := mail.SendMail(req.From, req.To, req.Subject, req.Body)
+	err := h.Service.SendMail(req.From, req.To, req.Subject, req.Body)
 	if err != nil {
 		Error(c, http.StatusInternalServerError, 10002, err.Error())
 		return
@@ -70,11 +71,8 @@ func (h *MailHandler) GetLatestEmails(c *gin.Context) {
 	}
 
 	count := 5
-	if countStr := c.Query("count"); countStr != "" {
-		_ = countStr // Just to avoid unused warning, use default count
-	}
 
-	emails, err := mail.GetLatestEmails(email, count)
+	emails, err := h.Service.GetLatestEmails(email, count)
 	if err != nil {
 		Error(c, http.StatusInternalServerError, 10002, err.Error())
 		return
@@ -87,7 +85,7 @@ func (h *MailHandler) GetLatestEmails(c *gin.Context) {
 }
 
 func (h *MailHandler) ListAccounts(c *gin.Context) {
-	accounts := mail.ListAccounts()
+	accounts := h.Service.ListAccounts()
 	OK(c, gin.H{
 		"accounts": accounts,
 	})

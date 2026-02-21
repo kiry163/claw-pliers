@@ -3,9 +3,12 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/kiry163/claw-pliers/internal/config"
+	"github.com/kiry163/claw-pliers/internal/database"
+	"github.com/kiry163/claw-pliers/internal/file"
+	"github.com/kiry163/claw-pliers/internal/service"
 )
 
-func NewRouter(cfg *config.Config, version string) *gin.Engine {
+func NewRouter(cfg *config.Config, db *database.DB, version string) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(RequestLogger())
@@ -14,9 +17,15 @@ func NewRouter(cfg *config.Config, version string) *gin.Engine {
 		c.JSON(200, gin.H{"status": "ok", "version": version})
 	})
 
-	fileHandler := NewFileHandler(cfg)
-	folderHandler := NewFolderHandler(cfg)
-	mailHandler := NewMailHandler(cfg)
+	// Initialize services
+	fileService := service.NewFileService(db, file.FileStorage)
+	folderService := service.NewFolderService(db)
+	mailService := service.NewMailService()
+
+	// Initialize handlers with dependencies
+	fileHandler := NewFileHandler(cfg, fileService)
+	folderHandler := NewFolderHandler(cfg, folderService)
+	mailHandler := NewMailHandler(cfg, mailService)
 
 	api := router.Group("/api/v1")
 

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FileHub Pro - 极简文件控制</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                DEFAULT: '#7C3AED',
+                light: '#A78BFA',
+                dark: '#5B21B6',
+              },
+              accent: '#F97316',
+              bg: '#FAF5FF',
+            },
+            fontFamily: {
+              sans: ['Fira Sans', 'system-ui', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body class="bg-bg text-[#1e0a3d] font-sans min-h-screen overflow-hidden">
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

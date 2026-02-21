@@ -1,0 +1,23 @@
+# 邮件账户配置
+accounts:
+  - provider: "163"
+    email: kiry_zen@163.com
+    auth_token: "CUUMDNGOPHMQCNDD"
+    enabled: true
+  - provider: "qq"
+    email: qiyaorui@qq.com
+    auth_token: "vsmdihzcyskrdhce"
+    enabled: true
+
+# Webhook 通知配置
+webhook:
+  url: "http://127.0.0.1:18789/hooks/agent"
+  token: ""
+  to: ""
+  session_key: ""
+  custom_payload: "{\"text\": \"📧 收到新邮件通知\", \"mode\": \"now\"}"
+  enable: false
+
+# 监控配置
+monitoring:
+  poll_interval: "30s"

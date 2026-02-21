@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FileHub Pro - 极简文件控制</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#7C3AED',
+                            light: '#A78BFA',
+                            dark: '#5B21B6',
+                        },
+                        accent: '#F97316',
+                    },
+                    fontFamily: {
+                        sans: ['Fira Sans', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-[#FAF5FF] text-[#1e0a3d] font-sans min-h-screen selection:bg-primary-light selection:text-white overflow-hidden">
+    <!-- 背景光晕 -->
+    <div class="fixed top-[-5%] left-[-5%] w-[35%] h-[35%] bg-primary/10 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
+    <div class="fixed bottom-[-5%] right-[-5%] w-[35%] h-[35%] bg-accent/5 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- 侧边栏导航 -->
+        <aside id="main-sidebar" class="fixed inset-y-0 left-0 z-[60] w-72 lg:static lg:flex flex-col glass-solid border-r border-white/40 m-0 lg:m-4 lg:rounded-3xl shadow-2xl lg:shadow-xl transition-transform duration-300 -translate-x-full lg:translate-x-0 overflow-hidden shrink-0">
+            <div class="p-8 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/30">
+                        <i data-lucide="folder-key" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight text-[#1e0a3d]">FileHub</h1>
+                        <p class="text-[10px] text-primary/70 uppercase tracking-widest font-bold">Pro Control</p>
+                    </div>
+                </div>
+                <button class="lg:hidden p-2 text-primary/40" id="sidebar-close"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+
+            <nav class="flex-1 px-4 py-2 space-y-1">
+                <div class="px-4 py-2 text-[10px] font-bold text-primary/40 uppercase tracking-[0.2em]">文件中心</div>
+                <button class="nav-item active w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300" data-view="files">
+                    <i data-lucide="files" class="w-5 h-5"></i>
+                    <span class="font-bold text-sm">所有文件</span>
+                </button>
+                <button class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300" data-view="upload">
+                    <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                    <span class="font-bold text-sm">上传中心</span>
+                </button>
+                <div class="pt-4 px-4 py-2 text-[10px] font-bold text-primary/40 uppercase tracking-[0.2em]">活动追踪</div>
+                <button class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300" data-view="downloads">
+                    <i data-lucide="download-cloud" class="w-5 h-5"></i>
+                    <span class="font-bold text-sm">下载记录</span>
+                </button>
+            </nav>
+
+            <div class="p-6">
+                <div class="bg-primary/5 p-4 rounded-2xl border border-primary/10 mb-4">
+                    <div class="flex justify-between text-[11px] font-bold mb-2">
+                        <span class="text-primary/70">存储空间</span>
+                        <span class="text-primary">56%</span>
+                    </div>
+                    <div class="h-1.5 bg-white/50 rounded-full overflow-hidden">
+                        <div class="h-full bg-primary w-[56%] rounded-full shadow-[0_0_8px_rgba(124,58,237,0.4)]"></div>
+                    </div>
+                    <p class="text-[10px] text-primary/60 font-medium mt-2">28.4 GB / 50 GB 已使用</p>
+                </div>
+                <button class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-red-50 rounded-2xl text-sm font-bold border border-white transition-all duration-300 text-red-500 shadow-sm" data-view="login">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    <span>退出系统</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+            
+            <!-- 顶部栏 -->
+            <header class="h-20 flex items-center justify-between px-6 lg:px-8 shrink-0 bg-white/40 backdrop-blur-lg border-b border-white/30 z-40">
+                <div class="flex items-center gap-4">
+                    <button class="lg:hidden p-2 text-primary" id="sidebar-open"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                    <div class="hidden lg:block relative group w-64 xl:w-96">
+                        <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/50 group-focus-within:text-primary transition-colors"></i>
+                        <input type="text" placeholder="搜索文件或路径..." class="w-full bg-white/60 border border-white/60 focus:bg-white focus:border-primary/40 focus:ring-4 focus:ring-primary/5 rounded-2xl py-2.5 pl-11 pr-4 outline-none transition-all duration-300 text-sm">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 md:gap-4">
+                    <button class="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-primary/5 hover:bg-primary/10 text-primary border border-primary/10 rounded-2xl font-bold text-xs md:text-sm transition-all shadow-sm group" data-drawer-open>
+                        <i data-lucide="refresh-cw" class="w-4 h-4 group-hover:animate-spin-slow"></i>
+                        <span class="hidden md:inline">2 个任务</span>
+                        <span class="md:hidden">2</span>
+                    </button>
+                    <div class="w-[1px] h-8 bg-primary/10"></div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-primary/10 border-2 border-white flex items-center justify-center font-bold text-primary shadow-sm">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 视图容器 -->
+            <div class="flex-1 overflow-y-auto px-4 md:px-8 pb-32 lg:pb-8 pt-6 relative">
+                
+                <!-- 1. 所有文件视图 -->
+                <section id="view-files" class="view active space-y-6">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-end justify-between">
+                            <div>
+                                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">所有文件</h2>
+                                <nav class="flex items-center gap-2 text-xs md:text-sm font-bold mt-1">
+                                    <button class="text-primary hover:underline">Root</button>
+                                    <i data-lucide="chevron-right" class="w-3 h-3 text-primary/30"></i>
+                                    <span class="text-primary/50">Documents</span>
+                                </nav>
+                            </div>
+                            <div class="flex items-center gap-1 p-1 bg-white/40 rounded-2xl border border-white/60 shadow-sm">
+                                <button class="p-2 rounded-xl transition-all duration-300 bg-white shadow-sm text-primary" data-layout-btn="list"><i data-lucide="list" class="w-4 h-4"></i></button>
+                                <button class="p-2 rounded-xl transition-all duration-300 text-primary/40 hover:text-primary" data-layout-btn="grid"><i data-lucide="layout-grid" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                            <button class="btn-primary-glow px-5 py-2.5 rounded-2xl flex items-center gap-2 font-bold text-xs whitespace-nowrap" data-view="upload">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                                <span>新建/上传</span>
+                            </button>
+                            <button class="bg-white/60 hover:bg-white border border-white/60 px-5 py-2.5 rounded-2xl flex items-center gap-2 font-bold text-xs text-primary transition-all shadow-sm whitespace-nowrap" id="btn-new-folder">
+                                <i data-lucide="folder-plus" class="w-4 h-4"></i>
+                                <span>新建文件夹</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="file-board" class="file-board" data-layout="list">
+                        <!-- 列表布局 -->
+                        <div id="layout-list" class="space-y-2">
+                            <div class="grid grid-cols-[1fr_120px_140px_80px] gap-4 px-6 py-2 text-[11px] font-bold uppercase tracking-widest text-primary/50">
+                                <div>名称</div>
+                                <div>大小</div>
+                                <div>最后修改</div>
+                                <div class="text-right">操作</div>
+                            </div>
+                            <!-- 文件夹 -->
+                            <div class="file-row group flex items-center gap-4 px-4 py-4 bg-white/60 hover:bg-white border border-white/20 rounded-2xl transition-all duration-300 cursor-pointer shadow-sm relative">
+                                <div class="w-11 h-11 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 shadow-inner">
+                                    <i data-lucide="folder" class="w-6 h-6 fill-amber-600/20"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-extrabold text-sm text-[#1e0a3d] truncate">工作项目</div>
+                                    <div class="text-[10px] text-primary/40 font-bold uppercase tracking-tight">8 个文件 · 文件夹</div>
+                                </div>
+                                <div class="hidden md:block text-xs font-bold text-primary/30 w-24 text-right">--</div>
+                                <div class="hidden md:block text-xs font-bold text-primary/30 w-32 text-right">2026-02-12</div>
+                                <div class="relative">
+                                    <button class="p-2 rounded-xl hover:bg-primary/10 text-primary transition-colors btn-more"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>
+                                </div>
+                            </div>
+                            <!-- 文件 -->
+                            <div class="file-row group flex items-center gap-4 px-4 py-4 bg-white/60 hover:bg-white border border-white/20 rounded-2xl transition-all duration-300 cursor-pointer shadow-sm" data-view="detail">
+                                <div class="w-11 h-11 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 shadow-inner">
+                                    <i data-lucide="file-text" class="w-6 h-6"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-extrabold text-sm text-[#1e0a3d] truncate">2026年度计划.pdf</div>
+                                    <div class="text-[10px] text-primary/40 font-mono font-bold tracking-tight">filehub://aB3dE9kLmN0P</div>
+                                </div>
+                                <div class="hidden md:block text-xs font-bold text-primary/40 w-24 text-right">4.8 MB</div>
+                                <div class="hidden md:block text-xs font-bold text-primary/30 w-32 text-right">2026-02-12</div>
+                                <button class="p-2 rounded-xl hover:bg-primary/10 text-primary transition-colors"><i data-lucide="download" class="w-5 h-5"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- 网格布局 - 已实现 -->
+                        <div id="layout-grid" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-6">
+                            <div class="group relative flex flex-col items-center p-6 bg-white/60 hover:bg-white border border-white/20 rounded-[32px] transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1">
+                                <div class="w-20 h-20 mb-4 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                                    <i data-lucide="folder" class="w-10 h-10 fill-amber-600/20"></i>
+                                </div>
+                                <div class="font-bold text-sm text-center truncate w-full px-2">工作项目</div>
+                                <div class="text-[10px] font-bold text-primary/30 mt-1 uppercase">8 Files</div>
+                                <button class="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity text-primary btn-more"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
+                            </div>
+                            <div class="group relative flex flex-col items-center p-6 bg-white/60 hover:bg-white border border-white/20 rounded-[32px] transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1" data-view="detail">
+                                <div class="w-20 h-20 mb-4 rounded-3xl bg-blue-100 text-blue-600 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                                    <i data-lucide="file-text" class="w-10 h-10"></i>
+                                </div>
+                                <div class="font-bold text-sm text-center truncate w-full px-2">2026年度计划.pdf</div>
+                                <div class="text-[10px] font-bold text-primary/30 mt-1 uppercase">4.8 MB</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. 上传中心视图 - 移除队列显示 -->
+                <section id="view-upload" class="view hidden space-y-6">
+                    <div class="flex items-center gap-4">
+                        <button class="p-2.5 rounded-xl hover:bg-white text-primary border border-white/50 shadow-sm" data-view="files"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                        <h2 class="text-3xl font-extrabold tracking-tight">上传中心</h2>
+                    </div>
+                    <div class="bg-white/40 border-2 border-dashed border-primary/20 rounded-[48px] h-[500px] flex flex-col items-center justify-center gap-8 group hover:border-primary/40 hover:bg-white/60 transition-all cursor-pointer shadow-inner">
+                        <div class="w-24 h-24 rounded-[32px] bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-primary/5">
+                            <i data-lucide="upload-cloud" class="w-12 h-12"></i>
+                        </div>
+                        <div class="text-center">
+                            <h3 class="text-2xl font-extrabold text-[#1e0a3d]">点击或拖拽上传</h3>
+                            <p class="text-primary/50 font-bold mt-2 uppercase tracking-tighter text-sm">任务状态将在右上角任务中心显示</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <button class="px-10 py-4 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all">选择文件</button>
+                            <button class="px-10 py-4 bg-white text-primary border border-primary/20 font-bold rounded-2xl shadow-lg hover:scale-105 active:scale-95 transition-all">文件夹</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. 文件详情/预览视图 - 完善元数据 -->
+                <section id="view-detail" class="view hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <button class="p-2.5 rounded-xl hover:bg-white text-primary border border-white/50 shadow-sm" data-view="files"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                            <div>
+                                <h2 class="text-2xl font-extrabold tracking-tight truncate max-w-[200px]">product-shot.png</h2>
+                                <p class="text-[10px] font-bold text-primary/50 uppercase">3.1 MB · image/png</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="p-3 rounded-2xl bg-primary text-white shadow-xl shadow-primary/30 hover:scale-105 transition-all"><i data-lucide="download" class="w-5 h-5"></i></button>
+                            <button class="p-3 rounded-2xl bg-white border border-red-100 text-red-500 shadow-lg hover:bg-red-50 transition-all"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="grid lg:grid-cols-4 gap-8">
+                        <div class="lg:col-span-3">
+                            <div class="bg-white/60 min-h-[550px] rounded-[48px] border border-white/40 overflow-hidden flex flex-col shadow-inner">
+                                <div class="flex items-center justify-center p-5 border-b border-white/20 bg-white/30 backdrop-blur-md">
+                                    <div class="flex p-1.5 bg-white/50 rounded-2xl border border-white/60 shadow-inner">
+                                        <button class="px-6 py-2 rounded-xl text-xs font-extrabold transition-all bg-white shadow-md text-primary tab-preview active" data-tab="preview">实时预览</button>
+                                        <button class="px-6 py-2 rounded-xl text-xs font-extrabold transition-all text-primary/40 hover:text-primary tab-preview" data-tab="metadata">详细元数据</button>
+                                    </div>
+                                </div>
+                                <div class="flex-1 p-10 flex items-center justify-center bg-primary/[0.02]" id="pane-preview">
+                                    <img src="https://images.unsplash.com/photo-1482192596544-9eb780fc7f66?auto=format&fit=crop&w=1200&q=80" class="max-h-[65vh] rounded-3xl shadow-2xl border-4 border-white object-contain">
+                                </div>
+                                <div class="flex-1 p-10 hidden" id="pane-metadata">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div class="space-y-6">
+                                            <h4 class="font-extrabold text-[#1e0a3d] border-b border-primary/10 pb-2">基本属性</h4>
+                                            <div class="space-y-4">
+                                                <div class="flex flex-col"><span class="text-[10px] font-bold text-primary/40 uppercase">文件名</span><span class="font-bold">product-shot.png</span></div>
+                                                <div class="flex flex-col"><span class="text-[10px] font-bold text-primary/40 uppercase">文件 ID</span><span class="font-mono text-sm font-bold">Zx9Cv6Nm2LpR</span></div>
+                                                <div class="flex flex-col"><span class="text-[10px] font-bold text-primary/40 uppercase">创建时间</span><span class="font-bold">2026-02-12 10:30:45</span></div>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-6">
+                                            <h4 class="font-extrabold text-[#1e0a3d] border-b border-primary/10 pb-2">存储详情</h4>
+                                            <div class="space-y-4">
+                                                <div class="flex flex-col"><span class="text-[10px] font-bold text-primary/40 uppercase">MD5 哈希</span><span class="font-mono text-xs font-bold break-all">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span></div>
+                                                <div class="flex flex-col"><span class="text-[10px] font-bold text-primary/40 uppercase">存储桶 (Bucket)</span><span class="font-bold">user-assets-01</span></div>
+                                                <div class="flex flex-col"><span class="text-[10px] font-bold text-primary/40 uppercase">访问级别</span><span class="text-green-600 font-bold">私有 (Private)</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-8">
+                            <div class="glass-solid p-8 rounded-[40px] border border-white/40 shadow-xl space-y-8">
+                                <div class="space-y-4">
+                                    <h4 class="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/40">共享控制</h4>
+                                    <div class="space-y-3">
+                                        <p class="text-xs font-bold">FileHub Protocol</p>
+                                        <div class="flex gap-2">
+                                            <div class="flex-1 bg-white/80 border border-primary/10 rounded-xl px-4 py-3 text-[11px] font-mono font-bold truncate">filehub://Zx9Cv6Nm2LpR</div>
+                                            <button class="p-3 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm" data-copy="filehub://Zx9Cv6Nm2LpR"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-3 pt-2">
+                                        <p class="text-xs font-bold">公开外链</p>
+                                        <div class="flex gap-2">
+                                            <div class="flex-1 bg-white/80 border border-primary/10 rounded-xl px-4 py-3 text-[11px] font-mono font-bold truncate">https://f.hub/s/a1b2c3d4</div>
+                                            <button class="p-3 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm" data-copy="https://f.hub/s/a1b2c3d4"><i data-lucide="link" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. 下载记录视图 -->
+                <section id="view-downloads" class="view hidden space-y-6">
+                    <div class="flex items-center justify-between"><h2 class="text-3xl font-extrabold tracking-tight">下载记录</h2><button class="text-xs font-extrabold text-red-500 hover:underline uppercase tracking-widest">清除全部</button></div>
+                    <div class="space-y-3">
+                        <div class="p-5 bg-white/60 border border-white/40 rounded-3xl flex items-center gap-4 shadow-sm group hover:bg-white transition-all duration-300">
+                            <div class="w-12 h-12 rounded-2xl bg-green-100 text-green-600 flex items-center justify-center shrink-0 shadow-inner"><i data-lucide="file-check" class="w-6 h-6"></i></div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-extrabold text-sm text-[#1e0a3d] truncate">presentation-final.pptx</div>
+                                <div class="text-[10px] text-primary/40 font-bold uppercase mt-1">14.2 MB · 2026-02-12 14:20 · 下载成功</div>
+                            </div>
+                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all"><button class="p-2.5 rounded-xl bg-primary/5 text-primary"><i data-lucide="folder-open" class="w-4 h-4"></i></button><button class="p-2.5 rounded-xl bg-red-50 text-red-500"><i data-lucide="trash" class="w-4 h-4"></i></button></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. 登录屏幕 - 已修复居中问题 -->
+                <section id="view-login" class="fixed inset-0 z-[100] bg-[#FAF5FF] hidden items-center justify-center p-6 transition-all duration-500">
+                    <div class="w-full max-w-md glass-solid p-10 md:p-12 rounded-[48px] border border-white/60 shadow-2xl flex flex-col items-center">
+                        <div class="w-20 h-20 bg-gradient-to-br from-primary to-primary-light rounded-3xl flex items-center justify-center text-white shadow-2xl mb-8">
+                            <i data-lucide="folder-key" class="w-10 h-10"></i>
+                        </div>
+                        <h2 class="text-4xl font-extrabold text-center tracking-tight text-[#1e0a3d]">FileHub Pro</h2>
+                        <p class="text-primary/60 text-center font-bold mt-2 mb-10 uppercase tracking-widest text-xs">Secure Control Center</p>
+                        <div class="w-full space-y-5">
+                            <div class="space-y-2"><label class="text-[11px] font-bold text-primary/40 ml-3 uppercase tracking-widest">用户名</label><input type="text" placeholder="admin" class="w-full bg-white/60 border border-white/40 focus:bg-white focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 outline-none transition-all font-bold"></div>
+                            <div class="space-y-2"><label class="text-[11px] font-bold text-primary/40 ml-3 uppercase tracking-widest">密码</label><input type="password" placeholder="••••••••" class="w-full bg-white/60 border border-white/40 focus:bg-white focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 outline-none transition-all font-bold"></div>
+                            <button class="w-full py-5 bg-primary text-white font-extrabold rounded-2xl shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all mt-6 text-sm uppercase tracking-widest" data-view="files">进入系统</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- 侧边栏/抽屉遮罩 -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-[#0f0721]/60 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+    <!-- 任务中心抽屉 - 完善进度显示 -->
+    <div id="drawer-backdrop" class="fixed inset-0 bg-[#0f0721]/60 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300 z-[60]" data-drawer-close></div>
+    <aside id="task-drawer" class="fixed top-6 right-6 bottom-6 w-full max-w-sm bg-white/95 backdrop-blur-xl border border-white/40 rounded-[40px] translate-x-[120%] transition-transform duration-500 z-[70] shadow-2xl flex flex-col overflow-hidden">
+        <div class="p-8 border-b border-primary/5 flex items-center justify-between">
+            <div><h3 class="font-extrabold text-2xl text-[#1e0a3d]">任务中心</h3><p class="text-[10px] font-bold text-primary/50 mt-1 uppercase tracking-widest">Active Tasks</p></div>
+            <button class="p-2.5 rounded-2xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors" data-drawer-close><i data-lucide="x" class="w-6 h-6"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-8 space-y-6">
+            <div class="p-6 bg-primary/5 border border-primary/10 rounded-[32px] space-y-4">
+                <div class="flex justify-between items-start">
+                    <div class="flex gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center shrink-0 shadow-lg shadow-primary/20"><i data-lucide="upload" class="w-6 h-6"></i></div>
+                        <div class="truncate">
+                            <div class="text-sm font-extrabold text-[#1e0a3d] truncate">raw-footage.mp4</div>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-[10px] font-bold text-primary px-2 py-0.5 bg-primary/10 rounded-full">45%</span>
+                                <span class="text-[10px] font-bold text-primary/40">1.2 GB · 12 MB/s</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="h-2.5 bg-white rounded-full overflow-hidden shadow-inner"><div class="h-full bg-primary w-[45%] shadow-[0_0_12px_rgba(124,58,237,0.4)] transition-all duration-500"></div></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 新建文件夹模态框 - 新增 -->
+    <div id="modal-new-folder" class="fixed inset-0 z-[150] bg-[#0f0721]/60 backdrop-blur-md hidden items-center justify-center p-6">
+        <div class="w-full max-w-sm glass-solid p-8 rounded-[40px] border border-white/60 shadow-2xl flex flex-col animate-scale-in">
+            <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-6 shadow-inner"><i data-lucide="folder-plus" class="w-8 h-8"></i></div>
+            <h3 class="text-2xl font-extrabold text-[#1e0a3d] mb-2">新建文件夹</h3>
+            <p class="text-sm text-primary/50 font-bold mb-6">输入名称以创建新的存储目录</p>
+            <input type="text" placeholder="输入文件夹名称..." id="input-folder-name" class="w-full bg-white/60 border border-white/40 focus:bg-white focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 outline-none transition-all font-bold mb-6">
+            <div class="flex gap-3">
+                <button class="flex-1 py-4 bg-white border border-primary/10 text-primary font-bold rounded-2xl hover:bg-primary/5 transition-all" id="close-folder-modal">取消</button>
+                <button class="flex-1 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:scale-105 transition-all">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 更多操作下拉菜单 - 新增 -->
+    <div id="dropdown-more" class="fixed z-[120] hidden bg-white/95 backdrop-blur-xl border border-primary/10 rounded-2xl shadow-2xl w-48 overflow-hidden py-1 animate-fade-in">
+        <button class="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-primary hover:bg-primary/5 transition-colors"><i data-lucide="edit-3" class="w-4 h-4"></i>重命名</button>
+        <button class="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-primary hover:bg-primary/5 transition-colors"><i data-lucide="copy" class="w-4 h-4"></i>复制到</button>
+        <button class="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-primary hover:bg-primary/5 transition-colors"><i data-lucide="move" class="w-4 h-4"></i>移动到</button>
+        <div class="h-[1px] bg-primary/5 my-1"></div>
+        <button class="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i>彻底删除</button>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div id="toast" class="fixed bottom-12 left-1/2 -translate-x-1/2 px-8 py-4 bg-[#1e0a3d] text-white rounded-2xl border border-white/10 shadow-2xl translate-y-20 opacity-0 transition-all duration-300 z-[200] font-extrabold text-sm pointer-events-none">已成功复制</div>
+
+    <script src="app.js"></script>
+</body>
+</html>

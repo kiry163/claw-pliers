@@ -1,0 +1,35 @@
+# Binaries
+/claw-mail-monitor
+/bin/
+
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Logs
+*.log
+
+# Local config
+/config.yaml
+
+# Design notes
+/DESIGN.md
+
+# IDE/editor
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Go workspace
+/vendor/
+
+# Temp
+tmp/
+dist/

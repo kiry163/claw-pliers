@@ -1,0 +1,14 @@
+server:
+  port: 8080
+  log_level: info
+
+auth:
+  local_key: "change-me-in-production"
+
+includes:
+  - name: file
+    path: "./file-config.yaml"
+  - name: mail
+    path: "./mail-config.yaml"
+  - name: image
+    path: "./image-config.yaml"

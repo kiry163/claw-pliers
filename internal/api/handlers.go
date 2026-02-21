@@ -10,17 +10,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kiry163/claw-pliers/internal/config"
-	"github.com/kiry163/claw-pliers/internal/database"
 	"github.com/kiry163/claw-pliers/internal/file"
-	"github.com/kiry163/claw-pliers/internal/utils"
+	"github.com/kiry163/claw-pliers/internal/service"
 )
 
 type FileHandler struct {
-	Config *config.Config
+	Config  *config.Config
+	Service *service.FileService
 }
 
-func NewFileHandler(cfg *config.Config) *FileHandler {
-	return &FileHandler{Config: cfg}
+func NewFileHandler(cfg *config.Config, svc *service.FileService) *FileHandler {
+	return &FileHandler{Config: cfg, Service: svc}
 }
 
 func (h *FileHandler) UploadFile(c *gin.Context) {
@@ -36,10 +36,6 @@ func (h *FileHandler) UploadFile(c *gin.Context) {
 	}
 
 	folderID := c.Query("folder_id")
-	var folderIDPtr *string
-	if folderID != "" {
-		folderIDPtr = &folderID
-	}
 
 	src, err := uploadedFile.Open()
 	if err != nil {
@@ -48,42 +44,18 @@ func (h *FileHandler) UploadFile(c *gin.Context) {
 	}
 	defer src.Close()
 
-	fileID := utils.GenerateFileID()
-	saveResult, err := file.FileStorage.Save(c.Request.Context(), src, uploadedFile.Size, fileID, uploadedFile.Filename)
+	fileID := h.Service.GenerateFileID()
+	metadata, err := h.Service.CreateFile(c.Request.Context(), src, uploadedFile.Size, fileID, uploadedFile.Filename, folderID, getUser(c))
 	if err != nil {
 		Error(c, http.StatusInternalServerError, 19999, "failed to save file")
 		return
 	}
 
-	record := database.File{
-		FileID:       fileID,
-		OriginalName: uploadedFile.Filename,
-		ObjectKey:    saveResult.ObjectKey,
-		Size:         uploadedFile.Size,
-		MimeType:     saveResult.MimeType,
-		FolderID:     folderIDPtr,
-		CreatedBy:    getUser(c),
-		CreatedAt:    database.NowRFC3339(),
-		UpdatedAt:    database.NowRFC3339(),
-	}
-
-	var dbErr error
-	if folderIDPtr != nil {
-		dbErr = file.Database.CreateFile(&record)
-	} else {
-		dbErr = file.Database.CreateFile(&record)
-	}
-
-	if dbErr != nil {
-		Error(c, http.StatusInternalServerError, 19999, "failed to save record")
-		return
-	}
-
 	OK(c, gin.H{
-		"file_id":       fileID,
-		"original_name": uploadedFile.Filename,
-		"size":          uploadedFile.Size,
-		"mime_type":     saveResult.MimeType,
+		"file_id":       metadata.FileID,
+		"original_name": metadata.OriginalName,
+		"size":          metadata.Size,
+		"mime_type":     metadata.MimeType,
 	})
 }
 
@@ -99,23 +71,14 @@ func (h *FileHandler) ListFiles(c *gin.Context) {
 		folderIDPtr = &folderID
 	}
 
-	var records []database.File
-	var total int64
-	var err error
-
-	if folderIDPtr != nil || folderID == "" {
-		records, total, err = file.Database.ListFilesByFolder(folderIDPtr, limit, offset, order, keyword)
-	} else {
-		records, total, err = file.Database.ListFiles(limit, offset, order, keyword)
-	}
-
+	result, err := h.Service.ListFiles(c.Request.Context(), folderIDPtr, limit, offset, order, keyword)
 	if err != nil {
 		Error(c, http.StatusInternalServerError, 19999, "failed to list files")
 		return
 	}
 
-	items := make([]gin.H, 0, len(records))
-	for _, r := range records {
+	items := make([]gin.H, 0, len(result.Items))
+	for _, r := range result.Items {
 		items = append(items, gin.H{
 			"file_id":       r.FileID,
 			"original_name": r.OriginalName,
@@ -126,60 +89,48 @@ func (h *FileHandler) ListFiles(c *gin.Context) {
 	}
 
 	OK(c, gin.H{
-		"total": total,
+		"total": result.Total,
 		"items": items,
 	})
 }
 
 func (h *FileHandler) GetFile(c *gin.Context) {
 	fileID := c.Param("id")
-	record, err := file.Database.GetFile(fileID)
+	metadata, err := h.Service.GetFile(c.Request.Context(), fileID)
 	if err != nil {
 		Error(c, http.StatusNotFound, 10002, "file not found")
 		return
 	}
 
 	OK(c, gin.H{
-		"file_id":       record.FileID,
-		"original_name": record.OriginalName,
-		"size":          record.Size,
-		"mime_type":     record.MimeType,
-		"created_at":    record.CreatedAt,
+		"file_id":       metadata.FileID,
+		"original_name": metadata.OriginalName,
+		"size":          metadata.Size,
+		"mime_type":     metadata.MimeType,
+		"created_at":    metadata.CreatedAt,
 	})
 }
 
 func (h *FileHandler) DownloadFile(c *gin.Context) {
 	fileID := c.Param("id")
-	record, err := file.Database.GetFile(fileID)
+	reader, metadata, err := h.Service.GetFileContent(c.Request.Context(), fileID)
 	if err != nil {
 		Error(c, http.StatusNotFound, 10002, "file not found")
 		return
 	}
-
-	reader, _, err := file.FileStorage.Get(c.Request.Context(), record.ObjectKey, nil, nil)
-	if err != nil {
-		Error(c, http.StatusInternalServerError, 19999, "failed to get file")
-		return
-	}
 	defer reader.Close()
 
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", record.OriginalName))
-	c.Header("Content-Type", record.MimeType)
-	c.Header("Content-Length", strconv.FormatInt(record.Size, 10))
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", metadata.OriginalName))
+	c.Header("Content-Type", metadata.MimeType)
+	c.Header("Content-Length", strconv.FormatInt(metadata.Size, 10))
 	c.Status(http.StatusOK)
 	io.Copy(c.Writer, reader)
 }
 
 func (h *FileHandler) DeleteFile(c *gin.Context) {
 	fileID := c.Param("id")
-	record, err := file.Database.DeleteFile(fileID)
-	if err != nil {
+	if err := h.Service.DeleteFile(c.Request.Context(), fileID); err != nil {
 		Error(c, http.StatusNotFound, 10002, "file not found")
-		return
-	}
-
-	if err := file.FileStorage.Delete(c.Request.Context(), record.ObjectKey); err != nil {
-		Error(c, http.StatusInternalServerError, 19999, "failed to delete file")
 		return
 	}
 
@@ -215,60 +166,35 @@ func (h *FileHandler) UploadFileByPath(c *gin.Context) {
 	defer src.Close()
 
 	parts := strings.Split(path, "/")
-	var folderID *string
+	var folderID string
 	var fileName string
 
 	if len(parts) > 1 {
 		folderPath := strings.Join(parts[:len(parts)-1], "/")
-		fileName = parts[len(parts)-1]
-
 		folder, err := file.Database.GetFolderByPath("/" + folderPath)
 		if err != nil {
 			Error(c, http.StatusNotFound, 10002, "parent folder not found")
 			return
 		}
-		folderID = &folder.FolderID
+		folderID = folder.FolderID
+		fileName = parts[len(parts)-1]
 	} else {
 		fileName = parts[0]
 	}
 
-	fileID := utils.GenerateFileID()
-	saveResult, err := file.FileStorage.Save(c.Request.Context(), src, uploadedFile.Size, fileID, fileName)
+	fileID := h.Service.GenerateFileID()
+	metadata, err := h.Service.CreateFile(c.Request.Context(), src, uploadedFile.Size, fileID, fileName, folderID, getUser(c))
 	if err != nil {
 		Error(c, http.StatusInternalServerError, 19999, "failed to save file")
 		return
 	}
 
-	record := database.File{
-		FileID:       fileID,
-		OriginalName: fileName,
-		ObjectKey:    saveResult.ObjectKey,
-		Size:         uploadedFile.Size,
-		MimeType:     saveResult.MimeType,
-		FolderID:     folderID,
-		CreatedBy:    getUser(c),
-		CreatedAt:    database.NowRFC3339(),
-		UpdatedAt:    database.NowRFC3339(),
-	}
-
-	var dbErr error
-	if folderID != nil {
-		dbErr = file.Database.CreateFile(&record)
-	} else {
-		dbErr = file.Database.CreateFile(&record)
-	}
-
-	if dbErr != nil {
-		Error(c, http.StatusInternalServerError, 19999, "failed to save record")
-		return
-	}
-
 	OK(c, gin.H{
-		"file_id":       fileID,
-		"original_name": fileName,
+		"file_id":       metadata.FileID,
+		"original_name": metadata.OriginalName,
 		"path":          "/" + path,
-		"size":          uploadedFile.Size,
-		"mime_type":     saveResult.MimeType,
+		"size":          metadata.Size,
+		"mime_type":     metadata.MimeType,
 	})
 }
 
@@ -287,17 +213,14 @@ func (h *FileHandler) ListFilesByPath(c *gin.Context) {
 		}
 	}
 
-	var records []database.File
-	var total int64
-	var err error
-	records, total, err = file.Database.ListFilesByFolder(folderID, limit, offset, order, keyword)
+	result, err := h.Service.ListFiles(c.Request.Context(), folderID, limit, offset, order, keyword)
 	if err != nil {
 		Error(c, http.StatusInternalServerError, 19999, "failed to list files")
 		return
 	}
 
-	items := make([]gin.H, 0, len(records))
-	for _, r := range records {
+	items := make([]gin.H, 0, len(result.Items))
+	for _, r := range result.Items {
 		var filePath string
 		if r.FolderID != nil {
 			folderPath, _ := file.Database.GetFolderPath(*r.FolderID)
@@ -317,7 +240,7 @@ func (h *FileHandler) ListFilesByPath(c *gin.Context) {
 	}
 
 	OK(c, gin.H{
-		"total": total,
+		"total": result.Total,
 		"items": items,
 	})
 }
@@ -385,13 +308,8 @@ func (h *FileHandler) DeleteFileByPath(c *gin.Context) {
 		return
 	}
 
-	if err := file.FileStorage.Delete(c.Request.Context(), record.ObjectKey); err != nil {
+	if err := h.Service.DeleteFile(c.Request.Context(), record.FileID); err != nil {
 		Error(c, http.StatusInternalServerError, 19999, "failed to delete file")
-		return
-	}
-
-	if _, err := file.Database.DeleteFile(record.FileID); err != nil {
-		Error(c, http.StatusInternalServerError, 19999, "failed to delete record")
 		return
 	}
 
@@ -460,7 +378,7 @@ func (h *FileHandler) GetFileInfoByPath(c *gin.Context) {
 		return
 	}
 
-	shareLink, _ := file.Database.GetActiveShareLink(record.FileID, database.NowRFC3339())
+	shareLink, _ := h.Service.GetActiveShareLink(c.Request.Context(), record.FileID, time.Now().UTC())
 
 	var downloadLink string
 	var expiresAt time.Time
@@ -472,23 +390,18 @@ func (h *FileHandler) GetFileInfoByPath(c *gin.Context) {
 	if shareLink.Token == "" {
 		now := time.Now().UTC()
 		expiresAtVal := now.Add(7 * 24 * time.Hour)
-		token := utils.GenerateShareToken()
-
-		newShareLink := database.ShareLink{
-			Token:     token,
-			FileID:    record.FileID,
-			ExpiresAt: expiresAtVal,
-			CreatedAt: now,
-			CreatedBy: getUser(c),
-			Status:    "active",
+		token, link, err := h.Service.CreateShareLink(c.Request.Context(), record.FileID, getUser(c), publicURL)
+		if err != nil {
+			Error(c, http.StatusInternalServerError, 19999, "failed to create share link")
+			return
 		}
-		_ = file.Database.CreateShareLink(&newShareLink)
 		shareLink.Token = token
-		shareLink.ExpiresAt = newShareLink.ExpiresAt
+		downloadLink = link
+		expiresAt = expiresAtVal
+	} else {
+		downloadLink = fmt.Sprintf("%s/s/%s", publicURL, shareLink.Token)
+		expiresAt = shareLink.ExpiresAt
 	}
-
-	downloadLink = fmt.Sprintf("%s/s/%s", publicURL, shareLink.Token)
-	expiresAt = shareLink.ExpiresAt
 
 	OK(c, gin.H{
 		"file_id":       record.FileID,
@@ -515,34 +428,21 @@ func (h *FileHandler) GenerateShareLinkByPath(c *gin.Context) {
 		return
 	}
 
-	now := time.Now().UTC()
-	expiresAt := now.Add(7 * 24 * time.Hour)
-	token := utils.GenerateShareToken()
-
-	shareLink := database.ShareLink{
-		Token:     token,
-		FileID:    record.FileID,
-		ExpiresAt: expiresAt,
-		CreatedAt: now,
-		CreatedBy: getUser(c),
-		Status:    "active",
-	}
-
-	if err := file.Database.CreateShareLink(&shareLink); err != nil {
-		Error(c, http.StatusInternalServerError, 19999, "failed to create share link")
-		return
-	}
-
 	publicURL := h.Config.Server.PublicEndpoint
 	if publicURL == "" {
 		publicURL = fmt.Sprintf("http://localhost:%d", h.Config.Server.Port)
 	}
-	downloadLink := fmt.Sprintf("%s/s/%s", publicURL, token)
+
+	token, downloadLink, err := h.Service.CreateShareLink(c.Request.Context(), record.FileID, getUser(c), publicURL)
+	if err != nil {
+		Error(c, http.StatusInternalServerError, 19999, "failed to create share link")
+		return
+	}
 
 	OK(c, gin.H{
 		"token":        token,
 		"download_url": downloadLink,
-		"expires_at":   expiresAt.Format(time.RFC3339),
+		"expires_at":   time.Now().UTC().Add(7 * 24 * time.Hour).Format(time.RFC3339),
 	})
 }
 
@@ -553,7 +453,7 @@ func (h *FileHandler) DownloadByShareToken(c *gin.Context) {
 		return
 	}
 
-	link, err := file.Database.GetShareLink(token)
+	link, err := h.Service.GetShareLink(c.Request.Context(), token)
 	if err != nil {
 		Error(c, http.StatusNotFound, 10002, "link not found")
 		return

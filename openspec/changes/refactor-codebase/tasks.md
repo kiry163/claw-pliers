@@ -34,12 +34,10 @@
 
 ## 7. 依赖注入重构
 
-- [ ] 7.1 重构 FileHandler 使用依赖注入
-- [ ] 7.2 重构 FolderHandler 使用依赖注入
-- [ ] 7.3 重构 MailHandler 使用依赖注入
-- [ ] 7.4 更新 router.go 组装依赖
-
-> Note: Service layer created (6.1-6.3), full DI integration pending
+- [x] 7.1 重构 FileHandler 使用依赖注入
+- [x] 7.2 重构 FolderHandler 使用依赖注入
+- [x] 7.3 重构 MailHandler 使用依赖注入
+- [x] 7.4 更新 router.go 组装依赖
 
 ## 8. 日志完善
 

@@ -1,0 +1,90 @@
+/* 提升可读性的玻璃拟态效果 */
+.glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+.glass-solid {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+}
+
+/* 按钮发光效果 */
+.btn-primary-glow {
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+  color: white;
+  box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.4);
+}
+
+.animate-spin-slow {
+  animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 侧边栏与导航 */
+.nav-item.active {
+  background: #7c3aed;
+  color: white;
+  box-shadow: 0 10px 20px -5px rgba(124, 58, 237, 0.3);
+}
+
+.nav-item:not(.active) {
+  color: rgba(30, 10, 61, 0.6);
+}
+
+.nav-item:not(.active):hover {
+  background: rgba(124, 58, 237, 0.05);
+  color: #7c3aed;
+}
+
+/* 动画效果 */
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-fade-in { animation: fadeIn 0.2s ease-out; }
+
+/* 视图显示动画 */
+.view {
+    display: none;
+    animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.view.active {
+    display: block;
+}
+
+#view-login.active {
+    display: flex;
+}
+
+@keyframes fadeInScale {
+    from { opacity: 0; transform: translateY(10px) scale(0.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 侧边栏/抽屉控制 */
+#main-sidebar.open { transform: translateX(0); }
+#sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
+#task-drawer.open { transform: translateX(0); }
+#drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+
+/* 自定义滚动条 */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: rgba(124, 58, 237, 0.2); border-radius: 10px; }
+
+/* Toast 控制 */
+#toast.show { transform: translate(-50%, 0); opacity: 1; }

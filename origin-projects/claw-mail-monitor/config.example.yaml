@@ -1,0 +1,29 @@
+accounts:
+  - provider: qq
+    email: your-email@qq.com
+    imap_host: imap.qq.com:993
+    smtp_host: smtp.qq.com:465
+    auth_token: your-auth-token
+    enabled: true
+
+  - provider: 163
+    email: your-email@163.com
+    imap_host: imap.163.com:993
+    smtp_host: smtp.163.com:465
+    auth_token: your-auth-token
+    enabled: false
+
+webhook:
+  url: http://127.0.0.1:18789/hooks/agent
+  token: webhook-secret-2026
+  to: ""
+  session_key: ""
+  custom_payload: ""
+  enable: true
+
+monitoring:
+  poll_interval: 30s
+
+logging:
+  level: info
+  file: ~/.cache/claw-mail-monitor/mail-monitor.log
