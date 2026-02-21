@@ -1,15 +1,14 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kiry163/claw-pliers/internal/config"
 	"github.com/kiry163/claw-pliers/internal/database"
 	"github.com/kiry163/claw-pliers/internal/file"
+	"github.com/kiry163/claw-pliers/internal/utils"
 )
 
 type FolderHandler struct {
@@ -35,7 +34,7 @@ func (h *FolderHandler) CreateFolder(c *gin.Context) {
 		return
 	}
 
-	folderID := generateFolderID()
+	folderID := utils.GenerateFolderID()
 	record := database.Folder{
 		FolderID:  folderID,
 		Name:      req.Name,
@@ -126,7 +125,7 @@ func (h *FolderHandler) CreateFolderByPath(c *gin.Context) {
 	for i := 0; i < len(parts)-1; i++ {
 		folder, err := file.Database.GetFolderByName(parts[i], currentParentID)
 		if err != nil {
-			newFolderID := generateFolderID()
+			newFolderID := utils.GenerateFolderID()
 			record := database.Folder{
 				FolderID:  newFolderID,
 				Name:      parts[i],
@@ -152,7 +151,7 @@ func (h *FolderHandler) CreateFolderByPath(c *gin.Context) {
 		return
 	}
 
-	folderID := generateFolderID()
+	folderID := utils.GenerateFolderID()
 	record := database.Folder{
 		FolderID:  folderID,
 		Name:      folderName,
@@ -233,8 +232,4 @@ func (h *FolderHandler) DeleteFolderByPath(c *gin.Context) {
 	}
 
 	Message(c, "folder_deleted")
-}
-
-func generateFolderID() string {
-	return fmt.Sprintf("%d%s", time.Now().Unix(), randomString(8))
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/kiry163/claw-pliers/internal/config"
 	"github.com/kiry163/claw-pliers/internal/database"
 	"github.com/kiry163/claw-pliers/internal/file"
+	"github.com/kiry163/claw-pliers/internal/utils"
 )
 
 type FileHandler struct {
@@ -47,7 +48,7 @@ func (h *FileHandler) UploadFile(c *gin.Context) {
 	}
 	defer src.Close()
 
-	fileID := generateFileID()
+	fileID := utils.GenerateFileID()
 	saveResult, err := file.FileStorage.Save(c.Request.Context(), src, uploadedFile.Size, fileID, uploadedFile.Filename)
 	if err != nil {
 		Error(c, http.StatusInternalServerError, 19999, "failed to save file")
@@ -185,19 +186,6 @@ func (h *FileHandler) DeleteFile(c *gin.Context) {
 	Message(c, "file_deleted")
 }
 
-func generateFileID() string {
-	return fmt.Sprintf("%d%s", time.Now().Unix(), randomString(8))
-}
-
-func randomString(n int) string {
-	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letters[time.Now().UnixNano()%int64(len(letters))]
-	}
-	return string(b)
-}
-
 func (h *FileHandler) UploadFileByPath(c *gin.Context) {
 	path := c.Query("path")
 	if path == "" {
@@ -244,7 +232,7 @@ func (h *FileHandler) UploadFileByPath(c *gin.Context) {
 		fileName = parts[0]
 	}
 
-	fileID := generateFileID()
+	fileID := utils.GenerateFileID()
 	saveResult, err := file.FileStorage.Save(c.Request.Context(), src, uploadedFile.Size, fileID, fileName)
 	if err != nil {
 		Error(c, http.StatusInternalServerError, 19999, "failed to save file")
@@ -484,7 +472,7 @@ func (h *FileHandler) GetFileInfoByPath(c *gin.Context) {
 	if shareLink.Token == "" {
 		now := time.Now().UTC()
 		expiresAtVal := now.Add(7 * 24 * time.Hour)
-		token := generateShareToken()
+		token := utils.GenerateShareToken()
 
 		newShareLink := database.ShareLink{
 			Token:     token,
@@ -529,7 +517,7 @@ func (h *FileHandler) GenerateShareLinkByPath(c *gin.Context) {
 
 	now := time.Now().UTC()
 	expiresAt := now.Add(7 * 24 * time.Hour)
-	token := generateShareToken()
+	token := utils.GenerateShareToken()
 
 	shareLink := database.ShareLink{
 		Token:     token,
@@ -599,13 +587,4 @@ func (h *FileHandler) DownloadByShareToken(c *gin.Context) {
 	c.Header("Content-Length", strconv.FormatInt(record.Size, 10))
 	c.Status(http.StatusOK)
 	io.Copy(c.Writer, reader)
-}
-
-func generateShareToken() string {
-	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, 32)
-	for i := range b {
-		b[i] = letters[time.Now().UnixNano()%int64(len(letters))]
-	}
-	return string(b)
 }

@@ -6,7 +6,7 @@
 ## 2. 响应格式统一
 
 - [x] 2.1 创建 internal/response/response.go 统一响应函数
-- [ ] 2.2 更新现有 handlers 使用新的响应函数
+- [x] 2.2 更新现有 handlers 使用新的响应函数（已在 handlers.go 中使用 OK/Error/Message）
 
 ## 3. 数据库层统一
 
@@ -19,12 +19,12 @@
 - [x] 4.1 创建 internal/api/file_handler.go（从 handlers.go 拆分）
 - [x] 4.2 创建 internal/api/folder_handler.go
 - [x] 4.3 创建 internal/api/mail_handler.go
-- [ ] 4.4 移除原 internal/api/handlers.go（更新使用 response 包后）
+- [x] 4.4 移除原 internal/api/handlers.go（file/folder/mail handlers 已分离）
 
 ## 5. 安全修复
 
 - [x] 5.1 创建 internal/utils/random.go 安全的随机数生成工具
-- [ ] 5.2 替换 handlers 中的不安全随机数生成
+- [x] 5.2 替换 handlers 中的不安全随机数生成
 
 ## 6. Service 层创建
 
