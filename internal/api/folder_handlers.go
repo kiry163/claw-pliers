@@ -8,6 +8,7 @@ import (
 	"github.com/kiry163/claw-pliers/internal/config"
 	"github.com/kiry163/claw-pliers/internal/database"
 	"github.com/kiry163/claw-pliers/internal/file"
+	"github.com/kiry163/claw-pliers/internal/response"
 	"github.com/kiry163/claw-pliers/internal/service"
 )
 
@@ -26,22 +27,22 @@ func (h *FolderHandler) CreateFolder(c *gin.Context) {
 		ParentID *string `json:"parent_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		Error(c, http.StatusBadRequest, 10004, "invalid request")
+		response.Error(c, http.StatusBadRequest, 10004, "invalid request")
 		return
 	}
 
 	if req.Name == "" {
-		Error(c, http.StatusBadRequest, 10004, "name is required")
+		response.Error(c, http.StatusBadRequest, 10004, "name is required")
 		return
 	}
 
 	metadata, err := h.Service.CreateFolder(c.Request.Context(), req.Name, "", getUser(c))
 	if err != nil {
-		Error(c, http.StatusInternalServerError, 19999, "failed to create folder")
+		response.Error(c, http.StatusInternalServerError, 19999, "failed to create folder")
 		return
 	}
 
-	OK(c, gin.H{
+	response.Success(c, gin.H{
 		"folder_id":  metadata.FolderID,
 		"name":       metadata.Name,
 		"parent_id":  metadata.ParentID,
@@ -58,7 +59,7 @@ func (h *FolderHandler) ListFolders(c *gin.Context) {
 
 	folders, err := h.Service.ListFolders(c.Request.Context(), parentIDPtr)
 	if err != nil {
-		Error(c, http.StatusInternalServerError, 19999, "failed to list folders")
+		response.Error(c, http.StatusInternalServerError, 19999, "failed to list folders")
 		return
 	}
 
@@ -72,7 +73,7 @@ func (h *FolderHandler) ListFolders(c *gin.Context) {
 		})
 	}
 
-	OK(c, gin.H{
+	response.Success(c, gin.H{
 		"total":   len(folders),
 		"folders": items,
 	})
@@ -86,11 +87,11 @@ func (h *FolderHandler) GetFolderByPath(c *gin.Context) {
 
 	metadata, err := h.Service.GetFolderByPath(c.Request.Context(), path)
 	if err != nil {
-		Error(c, http.StatusNotFound, 10002, "folder not found")
+		response.Error(c, http.StatusNotFound, 10002, "folder not found")
 		return
 	}
 
-	OK(c, gin.H{
+	response.Success(c, gin.H{
 		"folder_id":  metadata.FolderID,
 		"name":       metadata.Name,
 		"parent_id":  metadata.ParentID,
@@ -102,14 +103,14 @@ func (h *FolderHandler) GetFolderByPath(c *gin.Context) {
 func (h *FolderHandler) CreateFolderByPath(c *gin.Context) {
 	path := c.Query("path")
 	if path == "" {
-		Error(c, http.StatusBadRequest, 10004, "path is required")
+		response.Error(c, http.StatusBadRequest, 10004, "path is required")
 		return
 	}
 
 	path = strings.TrimPrefix(path, "/")
 	parts := strings.Split(path, "/")
 	if len(parts) == 0 || parts[0] == "" {
-		Error(c, http.StatusBadRequest, 10004, "invalid path")
+		response.Error(c, http.StatusBadRequest, 10004, "invalid path")
 		return
 	}
 
@@ -127,7 +128,7 @@ func (h *FolderHandler) CreateFolderByPath(c *gin.Context) {
 				UpdatedAt: database.NowRFC3339(),
 			}
 			if err := file.Database.CreateFolder(&record); err != nil {
-				Error(c, http.StatusInternalServerError, 19999, "failed to create folder")
+				response.Error(c, http.StatusInternalServerError, 19999, "failed to create folder")
 				return
 			}
 			currentParentID = &newFolderID
@@ -139,17 +140,17 @@ func (h *FolderHandler) CreateFolderByPath(c *gin.Context) {
 	folderName := parts[len(parts)-1]
 	existing, _ := file.Database.GetFolderByName(folderName, currentParentID)
 	if existing.FolderID != "" {
-		Error(c, http.StatusConflict, 10010, "folder already exists")
+		response.Error(c, http.StatusConflict, 10010, "folder already exists")
 		return
 	}
 
 	metadata, err := h.Service.CreateFolder(c.Request.Context(), folderName, "", getUser(c))
 	if err != nil {
-		Error(c, http.StatusInternalServerError, 19999, "failed to create folder")
+		response.Error(c, http.StatusInternalServerError, 19999, "failed to create folder")
 		return
 	}
 
-	OK(c, gin.H{
+	response.Success(c, gin.H{
 		"folder_id":  metadata.FolderID,
 		"name":       metadata.Name,
 		"parent_id":  metadata.ParentID,
@@ -161,58 +162,58 @@ func (h *FolderHandler) CreateFolderByPath(c *gin.Context) {
 func (h *FolderHandler) RenameFolderByPath(c *gin.Context) {
 	path := c.Query("path")
 	if path == "" {
-		Error(c, http.StatusBadRequest, 10004, "path is required")
+		response.Error(c, http.StatusBadRequest, 10004, "path is required")
 		return
 	}
 
 	newName := c.Query("new_name")
 	if newName == "" {
-		Error(c, http.StatusBadRequest, 10004, "new_name is required")
+		response.Error(c, http.StatusBadRequest, 10004, "new_name is required")
 		return
 	}
 
 	metadata, err := h.Service.GetFolderByPath(c.Request.Context(), path)
 	if err != nil {
-		Error(c, http.StatusNotFound, 10002, "folder not found")
+		response.Error(c, http.StatusNotFound, 10002, "folder not found")
 		return
 	}
 
 	if err := h.Service.RenameFolder(c.Request.Context(), metadata.FolderID, newName); err != nil {
-		Error(c, http.StatusInternalServerError, 19999, "failed to rename folder")
+		response.Error(c, http.StatusInternalServerError, 19999, "failed to rename folder")
 		return
 	}
 
-	Message(c, "folder_renamed")
+	response.Message(c, "folder_renamed")
 }
 
 func (h *FolderHandler) DeleteFolderByPath(c *gin.Context) {
 	path := c.Query("path")
 	if path == "" {
-		Error(c, http.StatusBadRequest, 10004, "path is required")
+		response.Error(c, http.StatusBadRequest, 10004, "path is required")
 		return
 	}
 
 	metadata, err := h.Service.GetFolderByPath(c.Request.Context(), path)
 	if err != nil {
-		Error(c, http.StatusNotFound, 10002, "folder not found")
+		response.Error(c, http.StatusNotFound, 10002, "folder not found")
 		return
 	}
 
 	count, _, err := h.Service.GetFolderItemCount(c.Request.Context(), metadata.FolderID)
 	if err != nil {
-		Error(c, http.StatusInternalServerError, 19999, "failed to check folder")
+		response.Error(c, http.StatusInternalServerError, 19999, "failed to check folder")
 		return
 	}
 
 	if count > 0 {
-		Error(c, http.StatusBadRequest, 10011, "folder not empty")
+		response.Error(c, http.StatusBadRequest, 10011, "folder not empty")
 		return
 	}
 
 	if err := h.Service.DeleteFolder(c.Request.Context(), metadata.FolderID); err != nil {
-		Error(c, http.StatusInternalServerError, 19999, "failed to delete folder")
+		response.Error(c, http.StatusInternalServerError, 19999, "failed to delete folder")
 		return
 	}
 
-	Message(c, "folder_deleted")
+	response.Message(c, "folder_deleted")
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kiry163/claw-pliers/internal/config"
+	"github.com/kiry163/claw-pliers/internal/response"
 	"github.com/kiry163/claw-pliers/internal/service"
 )
 
@@ -20,17 +21,17 @@ func NewMailHandler(cfg *config.Config, svc *service.MailService) *MailHandler {
 func (h *MailHandler) TestConnection(c *gin.Context) {
 	email := c.Query("email")
 	if email == "" {
-		Error(c, http.StatusBadRequest, 10001, "email is required")
+		response.Error(c, http.StatusBadRequest, 10001, "email is required")
 		return
 	}
 
 	latency, err := h.Service.TestConnection(email)
 	if err != nil {
-		Error(c, http.StatusInternalServerError, 10002, err.Error())
+		response.Error(c, http.StatusInternalServerError, 10002, err.Error())
 		return
 	}
 
-	OK(c, gin.H{
+	response.Success(c, gin.H{
 		"email":   email,
 		"latency": latency,
 		"status":  "ok",
@@ -47,17 +48,17 @@ type SendMailRequest struct {
 func (h *MailHandler) SendMail(c *gin.Context) {
 	var req SendMailRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		Error(c, http.StatusBadRequest, 10001, "invalid request body")
+		response.Error(c, http.StatusBadRequest, 10001, "invalid request body")
 		return
 	}
 
 	err := h.Service.SendMail(req.From, req.To, req.Subject, req.Body)
 	if err != nil {
-		Error(c, http.StatusInternalServerError, 10002, err.Error())
+		response.Error(c, http.StatusInternalServerError, 10002, err.Error())
 		return
 	}
 
-	OK(c, gin.H{
+	response.Success(c, gin.H{
 		"status":  "ok",
 		"message": "email sent successfully",
 	})
@@ -66,7 +67,7 @@ func (h *MailHandler) SendMail(c *gin.Context) {
 func (h *MailHandler) GetLatestEmails(c *gin.Context) {
 	email := c.Query("email")
 	if email == "" {
-		Error(c, http.StatusBadRequest, 10001, "email is required")
+		response.Error(c, http.StatusBadRequest, 10001, "email is required")
 		return
 	}
 
@@ -74,11 +75,11 @@ func (h *MailHandler) GetLatestEmails(c *gin.Context) {
 
 	emails, err := h.Service.GetLatestEmails(email, count)
 	if err != nil {
-		Error(c, http.StatusInternalServerError, 10002, err.Error())
+		response.Error(c, http.StatusInternalServerError, 10002, err.Error())
 		return
 	}
 
-	OK(c, gin.H{
+	response.Success(c, gin.H{
 		"emails": emails,
 		"count":  len(emails),
 	})
@@ -86,7 +87,7 @@ func (h *MailHandler) GetLatestEmails(c *gin.Context) {
 
 func (h *MailHandler) ListAccounts(c *gin.Context) {
 	accounts := h.Service.ListAccounts()
-	OK(c, gin.H{
+	response.Success(c, gin.H{
 		"accounts": accounts,
 	})
 }
