@@ -28,9 +28,9 @@
 
 ## 6. Service 层创建
 
-- [ ] 6.1 创建 internal/service/file_service.go
-- [ ] 6.2 创建 internal/service/folder_service.go
-- [ ] 6.3 创建 internal/service/mail_service.go
+- [x] 6.1 创建 internal/service/file_service.go
+- [x] 6.2 创建 internal/service/folder_service.go
+- [x] 6.3 创建 internal/service/mail_service.go
 
 ## 7. 依赖注入重构
 
@@ -46,6 +46,6 @@
 
 ## 9. 验证
 
-- [ ] 9.1 运行 make build 确保编译通过
-- [ ] 9.2 运行 make run 测试服务启动
-- [ ] 9.3 测试基本 API 功能
+- [x] 9.1 运行 make build 确保编译通过
+- [x] 9.2 运行 make run 测试服务启动
+- [x] 9.3 测试基本 API 功能
